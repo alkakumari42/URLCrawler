@@ -1,0 +1,80 @@
+<project name="URLCrawler" default="main" basedir=".">
+    <description>
+        This is URL Crawler.
+    </description>
+
+    <property environment="env"/>
+    <property name="build.dir" value="build" />
+    <property name="dist.dir" value="dist" />
+    <property name="projectName" value="URLCrawler" />
+    <property name="src.dir" value="src" />
+    <property name="lib.dir" value="lib" />
+
+    <path id="dependency-classpath">
+    <fileset dir="${lib.dir}">
+        <include name="*.jar"/>
+    </fileset>
+    </path>
+
+
+    <!-- To collect fetch all the dependencies into lib folder through maven.
+    NOTE: Make sure your environment variable for MAVEN_HOME is set properly.
+    -->
+    <target name="gather-dependency" description="Gather Jars">
+        <exec executable="cmd">
+            <arg value="/C"/>
+            <arg value="${env.MAVEN_HOME}\bin\mvn"/>
+            <arg line="clean install" />
+        </exec>
+    </target>
+
+    <target name="init">
+        <!-- Create the time stamp -->
+        <tstamp />
+        <!-- Create the build and lib directory structure used by compile -->
+        <mkdir dir="${build.dir}" />
+        <mkdir dir="${lib.dir}" />
+    </target>
+
+    <target name="compile" depends="init, gather-dependency" description="compile the source ">
+        <!-- Compile the java code from ${src.dir} into ${build.dir} -->
+        <javac includeantruntime="false" srcdir="${src.dir}" destdir="${build.dir}"
+               classpathref="dependency-classpath" />
+    </target>
+
+    <target name="package" depends="compile" description="package, output to JAR">
+        <!-- Create the distribution directory -->
+        <mkdir dir="${dist.dir}" />
+        <!-- Put everything in ${build} into the {$projectName}-fat-${DSTAMP}.jar file
+        NOTE: This will be a fat jar including all the dependencies.
+        -->
+        <jar jarfile="${dist.dir}/${projectName}-fat-${DSTAMP}.jar" basedir="${build.dir}" >
+            <manifest>
+                <!-- create an executable Jar -->
+                <attribute name="Main-Class" value="org.crawler.URLCrawler" />
+            </manifest>
+
+            <zipgroupfileset dir="${lib.dir}">
+                <include name="**/*.jar" />
+            </zipgroupfileset>
+        </jar>
+    </target>
+
+    <target name="clean" description="clean up">
+        <delete dir="${build.dir}" />
+        <delete dir="lib" />
+        <delete dir="${dist.dir}" />
+    </target>
+
+    <target name="run" depends="compile">
+        <java classname="org.crawler.URLCrawler" classpathref="dependency-classpath">
+            <arg value="${arg0}"/>
+            <arg value="${arg1}"/>
+            <classpath>
+                <pathelement path="${build.dir}"/>
+            </classpath>
+        </java>
+    </target>
+    <!-- Default, run this -->
+    <target name="main" depends="clean, compile, package" />
+</project>
