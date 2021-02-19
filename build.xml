@@ -1,4 +1,4 @@
-<project name="URLCrawler" default="main" basedir=".">
+<project name="URLCrawler" default="main" basedir="." xmlns:resolver="antlib:org.apache.maven.resolver.ant">
     <description>
         This is URL Crawler.
     </description>
@@ -10,23 +10,19 @@
     <property name="src.dir" value="src" />
     <property name="lib.dir" value="lib" />
 
-    <path id="dependency-classpath">
-    <fileset dir="${lib.dir}">
-        <include name="*.jar"/>
-    </fileset>
-    </path>
+    <path id="dependency-classpath" />
+    <taskdef uri="antlib:org.apache.maven.resolver.ant" resource="org/apache/maven/resolver/ant/antlib.xml" classpath="src/main/resources/maven-resolver-ant-tasks-1.2.1-uber.jar"/>
+    <resolver:pom file="pom.xml" id="pom"/>
+    <resolver:resolve>
+        <dependencies id="depsFromPom" pomRef="pom"/>
+        <path refid="dependency-classpath" classpath="runtime"/>
+    </resolver:resolve>
 
-
-    <!-- To collect fetch all the dependencies into lib folder through maven.
-    NOTE: Make sure your environment variable for MAVEN_HOME is set properly.
-    -->
-    <target name="gather-dependency" description="Gather Jars">
-        <exec executable="cmd">
-            <arg value="/C"/>
-            <arg value="${env.MAVEN_HOME}\bin\mvn"/>
-            <arg line="clean install" />
-        </exec>
-    </target>
+    <copy todir="${lib.dir}" flatten="true">
+        <path>
+            <pathelement path="${toString:dependency-classpath}"/>
+        </path>
+    </copy>
 
     <target name="init">
         <!-- Create the time stamp -->
@@ -36,10 +32,11 @@
         <mkdir dir="${lib.dir}" />
     </target>
 
-    <target name="compile" depends="init, gather-dependency" description="compile the source ">
+    <target name="compile" depends="init" description="compile the source ">
         <!-- Compile the java code from ${src.dir} into ${build.dir} -->
-        <javac includeantruntime="false" srcdir="${src.dir}" destdir="${build.dir}"
-               classpathref="dependency-classpath" />
+        <javac includeantruntime="false" srcdir="${src.dir}" destdir="${build.dir}">
+            <classpath refid="dependency-classpath"/>
+        </javac>
     </target>
 
     <target name="package" depends="compile" description="package, output to JAR">
